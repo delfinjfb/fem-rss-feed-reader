@@ -11,7 +11,8 @@ Deploy: Vercel.
    - Feed parser: RSS 2.0, Atom, RDF, encodings, entities, dates, malformed XML (Vitest)
    - OPML import/export with the sample file's edge cases (Vitest)
    - Server fetcher: 10 s timeout, SSRF guard, ETag/Last-Modified, manual redirects, backoff
-2. **Tracer bullet (guest)** — landing → "Try as guest" → dashboard with the 19 sample feeds, list layout
+2. **Tracer bullet (guest)** — done 2026-11-15: landing → "Try as guest" → dashboard with the 19 sample feeds,
+   list layout, session read state, cron warm-up (cold start capped at 4 s; warm load 0.14 s locally)
 3. **Auth** — sign up / in / out, password reset, protected routes
 4. **Feed management** — add (validate), edit, remove, categories (CRUD, reorder), health dashboard
 5. **Reading** — read/unread + watermark mark-all-read, reader view, next/previous, bookmarks, search
@@ -23,6 +24,8 @@ Deploy: Vercel.
 
 - **Neon database for production** — raised 2026-11-15. Needs: Delfin to create a Neon project
   (or the Vercel Marketplace Neon integration) and give the pooled `DATABASE_URL` to Vercel.
+- **Vercel env vars** — raised 2026-11-15. Needs: `DATABASE_URL`, `AUTH_SECRET` and `CRON_SECRET`
+  set in the Vercel project before the first deploy (see `.env.example`).
 - **Email provider for password reset** — raised 2026-11-15. Needs: a decision (Resend free tier
   is the default proposal) and an API key in Vercel env. Until then reset links are logged server-side in dev only.
 - **Dead sample feeds** — raised 2026-11-15. Figma Blog and Netlify Blog answer 404 today; they are
