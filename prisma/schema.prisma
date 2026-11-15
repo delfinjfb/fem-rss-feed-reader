@@ -49,6 +49,7 @@ model PasswordResetToken {
 model Feed {
   id            String    @id @default(cuid())
   url           String    @unique
+  previousUrl   String?   // original URL after a permanent redirect moved `url`
   title         String
   siteUrl       String?
   description   String?
@@ -63,6 +64,8 @@ model Feed {
   createdAt     DateTime  @default(now())
 
   items         Item[]
+
+  @@index([previousUrl])
   subscriptions Subscription[]
 }
 
@@ -74,9 +77,11 @@ model Item {
   title       String
   summary     String?
   content     String?   // sanitized HTML, only when the feed ships full content
+  hasContent  Boolean   @default(false) // lets list queries skip loading `content`
   author      String?
   imageUrl    String?
   publishedAt DateTime? // null when the feed gives no date
+  sortDate    DateTime  // publishedAt clamped to fetch time; never null, so keyset pagination stays simple
   fetchedAt   DateTime  @default(now())
   feed        Feed      @relation(fields: [feedId], references: [id], onDelete: Cascade)
 
@@ -84,8 +89,8 @@ model Item {
   bookmarks   Bookmark[]
 
   @@unique([feedId, guid])
-  @@index([feedId, publishedAt(sort: Desc)])
-  @@index([publishedAt(sort: Desc)])
+  @@index([feedId, sortDate(sort: Desc), id(sort: Desc)])
+  @@index([sortDate(sort: Desc), id(sort: Desc)])
 }
 
 model Category {
