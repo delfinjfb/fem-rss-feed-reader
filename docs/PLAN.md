@@ -22,8 +22,8 @@ Deploy: Vercel.
 
 ## Open action items
 
-- **Neon database for production** — raised 2026-11-15. Needs: Delfin to create a Neon project
-  (or the Vercel Marketplace Neon integration) and give the pooled `DATABASE_URL` to Vercel.
+- **Neon database for production** — raised 2026-11-15, resolved 2026-11-15: project `shy-morning-82046682`
+  (aws-eu-central-1, Postgres 18), migrations applied, TLS 1.3 with `sslmode=verify-full`. Local `.env` points at it.
 - **Vercel env vars** — raised 2026-11-15. Needs: `DATABASE_URL`, `AUTH_SECRET` and `CRON_SECRET`
   set in the Vercel project before the first deploy (see `.env.example`).
 - **Email provider for password reset** — raised 2026-11-15. Needs: a decision (Resend free tier

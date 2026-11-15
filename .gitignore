@@ -68,3 +68,5 @@ test-results/
 .windsurf/
 .agents/
 skills-lock.json
+.neon
+.claude/
