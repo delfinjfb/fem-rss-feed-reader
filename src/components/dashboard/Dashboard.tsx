@@ -1,7 +1,7 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { LogOut, Menu, X } from 'lucide-react';
+import { LogOut, Menu, Settings2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useRef, useState } from 'react';
 import { signOutAction } from '@/app/(auth)/actions';
@@ -127,7 +127,14 @@ function Brand() {
 
 function Account({ user }: { user: { email: string; name: string | null } }) {
   return (
-    <div className="mt-auto flex items-center gap-2 border-t border-border-subtle p-3">
+    <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-border-subtle p-3">
+      <Link
+        href="/app/feeds"
+        className="flex min-h-9 basis-full items-center gap-1.5 rounded-md px-2 text-sm font-medium text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
+      >
+        <Settings2 size={16} aria-hidden="true" />
+        Manage feeds
+      </Link>
       <p className="min-w-0 flex-1 truncate text-sm text-text-secondary" title={user.email}>
         {user.name ?? user.email}
       </p>
