@@ -26,6 +26,7 @@ model User {
   layout          Layout    @default(LIST)
   refreshMinutes  Int       @default(30) // 0 = manual only
   lastDigestAt    DateTime? // "since your last visit" anchor for the digest
+  sessionVersion  Int       @default(0) // bumped on password reset: every older session stops working
   createdAt       DateTime  @default(now())
 
   categories      Category[]
@@ -143,4 +144,12 @@ model Bookmark {
 
   @@id([userId, itemId])
   @@index([userId, createdAt(sort: Desc)])
+}
+
+// Fixed-window counter for auth endpoints (sign-in, sign-up, reset). Stored in Postgres because
+// serverless instances share no memory.
+model RateLimit {
+  key         String   @id // "<action>:<ip or email>"
+  windowStart DateTime
+  count       Int
 }
