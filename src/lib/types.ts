@@ -11,6 +11,7 @@ export interface NavFeed {
   lastSuccessAt: string | null;
   lastError: string | null;
   itemCount: number;
+  unreadCount: number;
 }
 
 export interface NavCategory {
@@ -29,6 +30,7 @@ export interface ItemDTO {
   author: string | null;
   publishedAt: string | null;
   hasContent: boolean;
+  read: boolean;
 }
 
 export interface ItemsPage {
@@ -40,3 +42,5 @@ export type Selection =
   | { kind: 'all' }
   | { kind: 'category'; id: string }
   | { kind: 'feed'; id: string };
+
+export type DashboardMode = 'guest' | 'user';

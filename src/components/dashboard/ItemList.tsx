@@ -4,30 +4,33 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { Circle, CircleCheck, ExternalLink } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { fullDate, relativeTime } from '@/lib/format';
-import type { ItemDTO, ItemsPage, NavFeed, Selection } from '@/lib/types';
+import type { DashboardMode, ItemDTO, ItemsPage, NavFeed, Selection } from '@/lib/types';
 import { FeedIcon } from './FeedIcon';
 
 interface Props {
+  mode: DashboardMode;
   selection: Selection;
   initialPage: ItemsPage | null;
   feedsById: Map<string, NavFeed>;
-  isRead: (id: string) => boolean;
+  isRead: (item: ItemDTO) => boolean;
   onToggleRead: (item: ItemDTO, read: boolean) => void;
 }
 
-function query(selection: Selection, cursor: string | null) {
+const ENDPOINT: Record<DashboardMode, string> = { guest: '/api/guest/items', user: '/api/me/items' };
+
+function query(mode: DashboardMode, selection: Selection, cursor: string | null) {
   const p = new URLSearchParams();
   if (selection.kind === 'feed') p.set('feed', selection.id);
   if (selection.kind === 'category') p.set('category', selection.id);
   if (cursor) p.set('cursor', cursor);
-  return `/api/guest/items?${p}`;
+  return `${ENDPOINT[mode]}?${p}`;
 }
 
-export function ItemList({ selection, initialPage, feedsById, isRead, onToggleRead }: Props) {
+export function ItemList({ mode, selection, initialPage, feedsById, isRead, onToggleRead }: Props) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, isError, refetch } = useInfiniteQuery({
-    queryKey: ['guest-items', selection],
+    queryKey: [mode, 'items', selection],
     queryFn: async ({ pageParam }): Promise<ItemsPage> => {
-      const res = await fetch(query(selection, pageParam));
+      const res = await fetch(query(mode, selection, pageParam));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res.json();
     },
@@ -70,7 +73,7 @@ export function ItemList({ selection, initialPage, feedsById, isRead, onToggleRe
       <ol className="divide-y divide-border-subtle">
         {items.map((item) => {
           const feed = feedsById.get(item.feedId);
-          const read = isRead(item.id);
+          const read = isRead(item);
           return (
             <li key={item.id} className="group relative flex gap-3 px-4 py-4 hover:bg-bg-secondary sm:px-6">
               <span

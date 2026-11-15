@@ -18,7 +18,12 @@ export async function feedStats(feedIds: string[]) {
   return new Map(rows.map((r) => [r.feedId, { count: r._count._all, latest: r._max.sortDate }]));
 }
 
-export function toNavFeed(feed: Feed, title: string, stats?: { count: number; latest: Date | null }): NavFeed {
+export function toNavFeed(
+  feed: Feed,
+  title: string,
+  stats?: { count: number; latest: Date | null },
+  readCount = 0,
+): NavFeed {
   return {
     id: feed.id,
     title,
@@ -28,11 +33,15 @@ export function toNavFeed(feed: Feed, title: string, stats?: { count: number; la
     lastSuccessAt: feed.lastSuccessAt?.toISOString() ?? null,
     lastError: feed.lastError,
     itemCount: stats?.count ?? 0,
+    unreadCount: Math.max(0, (stats?.count ?? 0) - readCount),
   };
 }
 
 /** Keyset-paginated items for a set of feeds, newest first, optional title/summary search. */
-export async function itemsPage(feedIds: string[], opts: { cursor?: string | null; q?: string | null } = {}): Promise<ItemsPage> {
+export async function itemsPage(
+  feedIds: string[],
+  opts: { cursor?: string | null; q?: string | null; userId?: string } = {},
+): Promise<ItemsPage> {
   const cursor = decodeCursor(opts.cursor);
   const q = opts.q?.trim();
   const where: Prisma.ItemWhereInput = {
@@ -51,6 +60,7 @@ export async function itemsPage(feedIds: string[], opts: { cursor?: string | nul
     select: {
       id: true, feedId: true, title: true, url: true, summary: true, imageUrl: true,
       author: true, publishedAt: true, sortDate: true, hasContent: true,
+      reads: opts.userId ? { where: { userId: opts.userId }, select: { read: true } } : false,
     },
   });
   const page = rows.slice(0, PAGE_SIZE);
@@ -66,7 +76,19 @@ export async function itemsPage(feedIds: string[], opts: { cursor?: string | nul
       author: r.author,
       publishedAt: r.publishedAt?.toISOString() ?? null,
       hasContent: r.hasContent,
+      read: r.reads?.[0]?.read ?? false,
     })),
     nextCursor: rows.length > PAGE_SIZE && last ? encodeCursor(last) : null,
   };
+}
+
+/** Items the user marked read, per feed (one grouped query over ReadState joined to Item). */
+export async function readCountsByFeed(userId: string, feedIds: string[]): Promise<Map<string, number>> {
+  if (feedIds.length === 0) return new Map();
+  const rows = await prisma.$queryRaw<{ feedId: string; n: bigint }[]>`
+    SELECT i."feedId", COUNT(*) AS n
+    FROM "ReadState" r JOIN "Item" i ON i.id = r."itemId"
+    WHERE r."userId" = ${userId} AND r.read AND i."feedId" = ANY(${feedIds})
+    GROUP BY i."feedId"`;
+  return new Map(rows.map((r) => [r.feedId, Number(r.n)]));
 }

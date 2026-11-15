@@ -1,18 +1,21 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Menu, X } from 'lucide-react';
+import { LogOut, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useRef, useState } from 'react';
-import type { ItemsPage, NavCategory, Selection } from '@/lib/types';
+import { signOutAction } from '@/app/(auth)/actions';
+import { setItemReadAction } from '@/app/app/actions';
+import type { DashboardMode, ItemsPage, NavCategory, Selection } from '@/lib/types';
 import { ItemList } from './ItemList';
 import { Sidebar } from './Sidebar';
-import { useGuestReadState } from './useReadState';
+import { useReadState } from './useReadState';
 
 interface Props {
-  mode: 'guest';
+  mode: DashboardMode;
   categories: NavCategory[];
   initialPage: ItemsPage;
+  user?: { email: string; name: string | null };
 }
 
 export function Dashboard(props: Props) {
@@ -24,15 +27,15 @@ export function Dashboard(props: Props) {
   );
 }
 
-function DashboardInner({ categories, initialPage }: Props) {
+function DashboardInner({ mode, categories, initialPage, user }: Props) {
   const [selection, setSelection] = useState<Selection>({ kind: 'all' });
-  const { isRead, setItemRead, readCountByFeed } = useGuestReadState();
+  const { isRead, setRead, unreadDelta } = useReadState(mode, mode === 'user' ? setItemReadAction : undefined);
   const drawer = useRef<HTMLDialogElement>(null);
   const main = useRef<HTMLElement>(null);
 
   const feedsById = useMemo(() => new Map(categories.flatMap((c) => c.feeds.map((f) => [f.id, f]))), [categories]);
   const unread = (ids: string[]) =>
-    ids.reduce((sum, id) => sum + Math.max(0, (feedsById.get(id)?.itemCount ?? 0) - (readCountByFeed[id] ?? 0)), 0);
+    ids.reduce((sum, id) => sum + Math.max(0, (feedsById.get(id)?.unreadCount ?? 0) + (unreadDelta[id] ?? 0)), 0);
 
   const heading =
     selection.kind === 'all'
@@ -59,6 +62,7 @@ function DashboardInner({ categories, initialPage }: Props) {
       <aside className="sticky top-0 hidden h-dvh overflow-y-auto border-r border-border bg-bg-secondary lg:flex lg:flex-col">
         <Brand />
         {sidebar}
+        {user && <Account user={user} />}
       </aside>
 
       <dialog
@@ -78,6 +82,7 @@ function DashboardInner({ categories, initialPage }: Props) {
           </button>
         </div>
         {sidebar}
+        {user && <Account user={user} />}
       </dialog>
 
       <div className="min-w-0">
@@ -93,16 +98,17 @@ function DashboardInner({ categories, initialPage }: Props) {
           <h1 className="truncate text-lg font-semibold">{heading}</h1>
         </header>
 
-        <GuestBanner />
+        {mode === 'guest' && <GuestBanner />}
 
         <main id="articles" ref={main} tabIndex={-1} className="mx-auto max-w-[var(--container-feed)] focus:outline-none">
           <ItemList
             key={JSON.stringify(selection)}
+            mode={mode}
             selection={selection}
             initialPage={selection.kind === 'all' ? initialPage : null}
             feedsById={feedsById}
             isRead={isRead}
-            onToggleRead={(item, read) => setItemRead(item.id, item.feedId, read)}
+            onToggleRead={setRead}
           />
         </main>
       </div>
@@ -116,6 +122,25 @@ function Brand() {
       <span aria-hidden="true" className="grid size-6 place-items-center rounded-md bg-accent text-xs text-white">F</span>
       Frontpage
     </Link>
+  );
+}
+
+function Account({ user }: { user: { email: string; name: string | null } }) {
+  return (
+    <div className="mt-auto flex items-center gap-2 border-t border-border-subtle p-3">
+      <p className="min-w-0 flex-1 truncate text-sm text-text-secondary" title={user.email}>
+        {user.name ?? user.email}
+      </p>
+      <form action={signOutAction}>
+        <button
+          type="submit"
+          className="flex min-h-9 items-center gap-1.5 rounded-md px-2 text-sm text-text-secondary hover:bg-bg-tertiary hover:text-text-primary"
+        >
+          <LogOut size={16} aria-hidden="true" />
+          Sign out
+        </button>
+      </form>
+    </div>
   );
 }
 
