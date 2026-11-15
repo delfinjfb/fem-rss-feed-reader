@@ -36,3 +36,6 @@ Deploy: Vercel.
   kept to exercise the error state. Decide later whether the guest seed should swap in their current URLs.
 - **DNS rebinding** — raised 2026-11-15. The SSRF guard resolves the host before fetching, but the
   socket resolves again. Acceptable for this project; a pinned-IP undici dispatcher would close it.
+- **Cron frequency** — raised 2026-11-15. Vercel Hobby allows daily cron only, so `/api/cron/refresh`
+  runs at 06:00 UTC; page visits refresh due feeds in the background between runs. A Pro plan (or an
+  external scheduler calling the endpoint with `CRON_SECRET`) would restore the 15-minute warm-up.
