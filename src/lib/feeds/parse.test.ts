@@ -84,6 +84,14 @@ describe('parseFeed', () => {
     expect(f.items[0].summary!.length).toBeLessThanOrEqual(281);
   });
 
+  it('drops summaries that are mostly links (Hacker News style)', () => {
+    const hn = rss2.replace(
+      '<![CDATA[<p>Short <b>summary</b></p>]]>',
+      '<![CDATA[<p>Article URL: <a href="https://x.dev/a-long-article-path">https://x.dev/a-long-article-path</a></p><p>Comments URL: <a href="https://news.ycombinator.com/item?id=50507303">https://news.ycombinator.com/item?id=50507303</a></p><p>Points: 459</p><p># Comments: 281</p>]]>',
+    ).replace(/<content:encoded>[^]*?<\/content:encoded>/, '');
+    expect(parseFeed(hn).items[0].summary).toBeNull();
+  });
+
   it('parses RSS 1.0 / RDF', () => {
     const f = parseFeed(rdf);
     expect(f.format).toBe('rdf');

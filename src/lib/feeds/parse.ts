@@ -99,9 +99,15 @@ export function toPlainText(html: string | null): string | null {
   return plain || null;
 }
 
+const URL_IN_TEXT = /https?:\/\/\S+/g;
+
 function excerpt(html: string | null): string | null {
   const plain = toPlainText(html);
-  if (!plain || plain.length <= SUMMARY_MAX) return plain;
+  if (!plain) return null;
+  // Link-dump summaries (Hacker News: "Article URL: … Comments URL: …") carry no reading value.
+  const urlChars = (plain.match(URL_IN_TEXT) ?? []).join('').length;
+  if (urlChars / plain.length > 0.5) return null;
+  if (plain.length <= SUMMARY_MAX) return plain;
   return `${plain.slice(0, SUMMARY_MAX).replace(/\s+\S*$/, '')}…`;
 }
 

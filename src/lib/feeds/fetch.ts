@@ -156,6 +156,7 @@ export async function fetchFeed(
     if (e.name === 'TimeoutError') return { kind: 'error', message: 'The feed took longer than 10 seconds to answer.', permanent: false };
     if (e instanceof UnsafeUrlError) return { kind: 'error', message: e.message, permanent: true };
     if (e.name === 'FeedParseError') return { kind: 'error', message: e.message, permanent: true };
-    return { kind: 'error', message: `Network error: ${e.message}`, permanent: false };
+    const cause = (e.cause as { code?: string } | undefined)?.code;
+    return { kind: 'error', message: `Network error: ${e.message}${cause ? ` (${cause})` : ''}`, permanent: false };
   }
 }
