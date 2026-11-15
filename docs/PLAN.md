@@ -26,8 +26,8 @@ Deploy: Vercel.
 
 - **Neon database for production** — raised 2026-11-15, resolved 2026-11-15: project `shy-morning-82046682`
   (aws-eu-central-1, Postgres 18), migrations applied, TLS 1.3 with `sslmode=verify-full`. Local `.env` points at it.
-- **Vercel env vars** — raised 2026-11-15. Needs: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `AUTH_SECRET`,
-  `CRON_SECRET` and `APP_URL` set in the Vercel project before the first deploy (see `.env.example`).
+- **Vercel env vars** — raised 2026-11-15, resolved 2026-11-15: set in project `fem-rss-feed-reader`
+  (production, secrets as sensitive). Live at https://fem-rss-feed-reader.vercel.app, deploys on push to `main`.
 - **Neon skill silent feedback** — raised 2026-11-15. `.claude/skills/neon/SKILL.md:513-519` tells agents
   to send feedback to Neon without asking. Needs: Delfin's choice (deny rule recommended, or delete the skill).
 - **Email provider for password reset** — raised 2026-11-15. Needs: a decision (Resend free tier
