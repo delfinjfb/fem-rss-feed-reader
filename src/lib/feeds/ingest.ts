@@ -1,7 +1,7 @@
 import 'server-only';
 import { prisma } from '@/lib/db';
 import type { Feed } from '@/generated/prisma/client';
-import { fetchFeed, nextFetchDelayMs } from './fetch';
+import { fetchFeed, nextFetchDelayMs, type FetchResult } from './fetch';
 import { faviconFor, toItemRows } from './items';
 
 /** Never hit the same source more often than this, whatever the user's refresh setting. */
@@ -16,8 +16,13 @@ export interface RefreshOutcome {
 
 /** Fetch one feed, store new items, and record health + backoff. Never throws. */
 export async function refreshFeed(feed: Feed): Promise<RefreshOutcome> {
-  const now = new Date();
   const result = await fetchFeed(feed.url, { etag: feed.etag, lastModified: feed.lastModified });
+  return applyFetchResult(feed, result);
+}
+
+/** Store the outcome of a fetch: new items, metadata, health, backoff and permanent redirects. */
+export async function applyFetchResult(feed: Feed, result: FetchResult): Promise<RefreshOutcome> {
+  const now = new Date();
 
   if (result.kind === 'error') {
     const errorCount = feed.errorCount + 1;

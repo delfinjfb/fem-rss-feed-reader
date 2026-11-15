@@ -9,6 +9,7 @@ export const LIMITS = {
   'sign-up': 5,
   'forgot': 5,
   'reset': 10,
+  'add-feed': 30,
 } as const;
 
 /** Client IP as Vercel forwards it; "unknown" locally. Only used as a rate-limit key. */

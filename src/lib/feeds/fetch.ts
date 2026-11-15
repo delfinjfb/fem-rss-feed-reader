@@ -1,5 +1,6 @@
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
+import { looksLikeHtml } from './discover';
 import { decodeFeedBytes, parseFeed, type ParsedFeed } from './parse';
 
 export const FETCH_TIMEOUT_MS = 10_000;
@@ -16,7 +17,7 @@ export type FeedHealth = 'active' | 'stale' | 'error' | 'dead';
 export type FetchResult =
   | { kind: 'ok'; feed: ParsedFeed; etag: string | null; lastModified: string | null; finalUrl: string; movedPermanently: boolean }
   | { kind: 'not-modified' }
-  | { kind: 'error'; message: string; permanent: boolean };
+  | { kind: 'error'; message: string; permanent: boolean; page?: { html: string; url: string } };
 
 export class UnsafeUrlError extends Error {}
 
@@ -142,6 +143,10 @@ export async function fetchFeed(
         return { kind: 'error', message: `The server answered HTTP ${res.status}.`, permanent: PERMANENT_STATUSES.has(res.status) };
       }
       const xml = decodeFeedBytes(await readCapped(res), res.headers.get('content-type'));
+      if (looksLikeHtml(xml)) {
+        // A web page, not a feed: hand the HTML back so the caller can try feed autodiscovery.
+        return { kind: 'error', message: 'This page is a website, not a feed.', permanent: true, page: { html: xml, url: current } };
+      }
       return {
         kind: 'ok',
         feed: parseFeed(xml),
