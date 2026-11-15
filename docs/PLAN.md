@@ -16,7 +16,8 @@ Deploy: Vercel.
 3. **Auth** — done 2026-11-15: sign up / in / out, password reset (single-use hashed token, revokes
    other sessions), Postgres rate limiting, proxy + page session checks, user dashboard with DB read
    state and a one-click starter pack. 15/15 Playwright checks pass locally.
-4. **Feed management** — add (validate), edit, remove, categories (CRUD, reorder), health dashboard
+4. **Feed management** — done 2026-11-15: add by feed or website URL (autodiscovery, validation, SSRF guard),
+   edit title/category, remove with confirm, categories CRUD + up/down reorder, health summary, retry. 13/13 e2e.
 5. **Reading** — read/unread + watermark mark-all-read, reader view, next/previous, bookmarks, search
 6. **Design challenges** — onboarding/discovery (starter packs + OPML), digest ("since last visit"), layouts (list / compact / cards / split)
 7. **Stretch** — refresh & polling, keyboard shortcuts + command palette, OPML UI
