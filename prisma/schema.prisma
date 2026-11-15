@@ -1,0 +1,141 @@
+// Frontpage data model.
+// Feeds and items are shared across users (fetched once, deduplicated by feedId+guid);
+// everything personal (subscriptions, categories, read state, bookmarks) hangs off User.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Layout {
+  LIST
+  COMPACT
+  CARDS
+  SPLIT
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  name            String?
+  layout          Layout    @default(LIST)
+  refreshMinutes  Int       @default(30) // 0 = manual only
+  lastDigestAt    DateTime? // "since your last visit" anchor for the digest
+  createdAt       DateTime  @default(now())
+
+  categories      Category[]
+  subscriptions   Subscription[]
+  reads           ReadState[]
+  bookmarks       Bookmark[]
+  resetTokens     PasswordResetToken[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique // SHA-256 of the emailed token, never the token itself
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Feed {
+  id            String    @id @default(cuid())
+  url           String    @unique
+  title         String
+  siteUrl       String?
+  description   String?
+  iconUrl       String?
+  etag          String?
+  lastModified  String?
+  lastFetchedAt DateTime?
+  lastSuccessAt DateTime?
+  lastError     String?
+  errorCount    Int       @default(0) // drives exponential backoff
+  nextFetchAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  items         Item[]
+  subscriptions Subscription[]
+}
+
+model Item {
+  id          String    @id @default(cuid())
+  feedId      String
+  guid        String
+  url         String?
+  title       String
+  summary     String?
+  content     String?   // sanitized HTML, only when the feed ships full content
+  author      String?
+  imageUrl    String?
+  publishedAt DateTime? // null when the feed gives no date
+  fetchedAt   DateTime  @default(now())
+  feed        Feed      @relation(fields: [feedId], references: [id], onDelete: Cascade)
+
+  reads       ReadState[]
+  bookmarks   Bookmark[]
+
+  @@unique([feedId, guid])
+  @@index([feedId, publishedAt(sort: Desc)])
+  @@index([publishedAt(sort: Desc)])
+}
+
+model Category {
+  id            String         @id @default(cuid())
+  userId        String
+  name          String
+  position      Int            @default(0)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@unique([userId, name])
+  @@index([userId, position])
+}
+
+model Subscription {
+  id          String    @id @default(cuid())
+  userId      String
+  feedId      String
+  categoryId  String?   // null = Uncategorized
+  customTitle String?
+  readBefore  DateTime? // "mark all read" watermark: items published before it count as read
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  feed        Feed      @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, feedId])
+  @@index([userId, categoryId])
+}
+
+// Explicit per-item state after the watermark. read=false lets a user mark an
+// item unread even when it sits behind the watermark.
+model ReadState {
+  userId String
+  itemId String
+  read   Boolean  @default(true)
+  at     DateTime @default(now())
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item   Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@id([userId, itemId])
+}
+
+model Bookmark {
+  userId    String
+  itemId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@id([userId, itemId])
+  @@index([userId, createdAt(sort: Desc)])
+}
